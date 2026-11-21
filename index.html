@@ -1,43 +1,105 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
-        <meta name="Keywords" content="批量删除空白行、注释行;软件著作权源码整理"/>
-        <meta name="description" content="批量删除空白行、注释行;软件著作权源码整理"/>
-        <title>批量删除空白行、注释行</title>
-        <script>
-            function run(obj) {
-                var v = document.getElementById(obj).value;
-                if (v == "") {
-                    alert("请输入要运行的代码内容");
-                    return false;
-                }
-                var temp = code.innerHTML;
-                // var temp2=temp.replace(/\/\/.+?/gm, '');
-                code.innerHTML = temp.replace(/^\s+|\s+$/gm, "");
-            }
-        </script>
-    </head>
-    <body>
-        <h3>批量删除空白行、注释行</h3>
-        <textarea id="code" style="width:99%" rows="30">求正则匹配空白行删除掉问题，
-一段文本内容，一行文字，直接回车的空一行隔一行空白行再写字匹配不到，这个空白行没有按下空格，没有按下tab键，纯空白行，就是匹配不到
- 
-以下失败的的正则
-str=str.replace(/^[\n]$/g,"");  // 以行开头以行结束的行，匹配不到失败
-str=str.replace(/^[\r\n]$/g,"");  //加\r 还是失败
- 
-str=str.replace(/[\n]/g,""); //去掉 \^\$ 这样的话 连有文字有东西的行，的换行符都没了，整个文章都成一行了
-还是匹配失败！
- 
-str=str.replace(/^\s+$/g,""); //以空白开头 以空白结尾 也匹配失败！哎，
- 
-求大神解决。。。上代码谢谢！
-    </textarea>
-        <div>
-            <input name="button" type="button" onclick="run('code')" value="运行代码">
-            <input name="button" type="button" onclick="document.getElementById('code').value='';" value="清空代码">
-        </div>
-    </body>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>清理空白行与注释工具</title>
+<meta name="description" content="批量删除文本中的空白行、行首尾空格和 HTML 注释，适合整理代码与文章。">
+<style>
+:root{
+  --primary:#5b6cff; --primary-d:#4a5bf0; --bg:#eef1f7; --card:#ffffff;
+  --text:#1f2430; --muted:#6b7280; --border:#e2e6ee; --soft:#f4f6fb;
+  --ok:#16a34a; --radius:14px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto;padding:28px 18px 60px}
+header{text-align:center;margin-bottom:22px}
+header h1{font-size:26px;margin:0 0 6px;font-weight:700;letter-spacing:.5px}
+header p{color:var(--muted);margin:0;font-size:15px}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:0 6px 24px rgba(30,41,59,.07);padding:22px;margin-bottom:18px}
+label.field{display:block;font-weight:600;margin:0 0 8px;font-size:15px}
+textarea,input[type=text]{width:100%;border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-size:15px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#fcfdff;resize:vertical;outline:none;transition:border .15s,box-shadow .15s}
+textarea:focus,input[type=text]:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(91,108,255,.15)}
+textarea{min-height:180px;line-height:1.7}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.btn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:10px;padding:10px 18px;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s,transform .05s}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary-d)}
+.btn-ghost{background:#fff;color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--soft)}
+.hint{color:var(--muted);font-size:13.5px;margin-top:10px}
+.output{margin-top:14px}
+.output textarea{min-height:140px;background:var(--soft)}
+.result-num{display:flex;flex-wrap:wrap;gap:14px;margin-top:8px}
+.stat{background:var(--soft);border-radius:10px;padding:10px 16px;min-width:120px}
+.stat b{font-size:22px;color:var(--primary);display:block}
+.stat span{font-size:13px;color:var(--muted)}
+footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
+footer a{color:var(--primary);text-decoration:none}
+#toast{position:fixed;left:50%;bottom:36px;transform:translateX(-50%);background:#1f2430;color:#fff;
+  padding:10px 20px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:99}
+#toast.show{opacity:.95}
+@media(max-width:600px){header h1{font-size:21px}.wrap{padding:18px 12px 40px}.card{padding:16px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><h1>清理空白行与注释工具</h1><p>批量删除文本中的空白行、行首尾空格和 HTML 注释，适合整理代码与文章。</p></header>
+
+<div class="card">
+  <label class="field" for="in">粘贴需要清理的文本 / 代码</label>
+  <textarea id="in" placeholder="在这里粘贴内容，空行、注释等将被清理…"></textarea>
+  <div class="row" style="gap:18px">
+    <label style="display:flex;align-items:center;gap:6px;font-size:15px"><input type="checkbox" id="optEmpty" checked style="width:auto"> 删除空白行</label>
+    <label style="display:flex;align-items:center;gap:6px;font-size:15px"><input type="checkbox" id="optTrim" checked style="width:auto"> 去除每行首尾空格</label>
+    <label style="display:flex;align-items:center;gap:6px;font-size:15px"><input type="checkbox" id="optComment" style="width:auto"> 删除 HTML 注释 &lt;!-- --&gt;</label>
+  </div>
+  <div class="row">
+    <button class="btn btn-primary" onclick="run()">清理文本</button>
+    <button class="btn btn-ghost" onclick="copyOut()">复制结果</button>
+    <button class="btn btn-ghost" onclick="clearAll()">清空</button>
+  </div>
+</div>
+<div class="card output">
+  <div class="result-num">
+    <div class="stat"><b id="before">0</b><span>原始行数</span></div>
+    <div class="stat"><b id="after">0</b><span>清理后行数</span></div>
+  </div>
+  <label class="field" for="out" style="margin-top:14px">清理结果</label>
+  <textarea id="out" readonly></textarea>
+</div>
+<script>
+function run(){
+  var lines=document.getElementById('in').value.split('\n');
+  var delComment=document.getElementById('optComment').checked;
+  var trim=document.getElementById('optTrim').checked;
+  var delEmpty=document.getElementById('optEmpty').checked;
+  var out=[];
+  lines.forEach(function(l){
+    if(delComment)l=l.replace(/<!--[\s\S]*?-->/g,'');
+    if(trim)l=l.replace(/^\s+|\s+$/g,'');
+    if(delEmpty && l.trim()==='')return;
+    out.push(l);
+  });
+  document.getElementById('out').value=out.join('\n');
+  document.getElementById('before').textContent=lines.length;
+  document.getElementById('after').textContent=out.length;
+  toast('清理完成');
+}
+function copyOut(){copyText(document.getElementById('out').value);}
+function clearAll(){document.getElementById('in').value='';document.getElementById('out').value='';}
+</script>
+
+<footer>本工具由 wangchenyu.com 整理开源，纯浏览器本地运行，数据不上传。<br>作者：王尘宇 · <a href="https://wangchenyu.com">wangchenyu.com</a> · <a href="https://gitee.com/iseeyu">Gitee</a></footer>
+</div>
+<div id="toast"></div>
+<script>
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),1600);}
+function copyText(txt){if(!txt){toast('没有可复制的内容');return;}navigator.clipboard.writeText(txt).then(()=>toast('已复制到剪贴板')).catch(()=>{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('已复制');});}
+</script>
+</body>
 </html>
